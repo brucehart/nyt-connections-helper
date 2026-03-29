@@ -1,5 +1,9 @@
 # NYT Connections Helper
 
+<p align="center">
+  <img src="assets/logo.svg" width="132" alt="NYT Connections Helper logo">
+</p>
+
 NYT Connections Helper is a Chrome extension that recreates the behavior of the existing NYT Connections color-cycler userscript and adds configurable category settings.
 
 ## Features

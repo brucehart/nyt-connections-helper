@@ -10,13 +10,28 @@ body {
   padding: 16px;
 }
 
+.popup-header {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.logo-mark {
+  display: block;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+}
+
 h1 {
-  margin: 0 0 8px;
+  margin: 0 0 4px;
   font-size: 18px;
 }
 
 .subtitle {
-  margin: 0 0 12px;
+  margin: 0;
   color: #525252;
   font-size: 13px;
 }

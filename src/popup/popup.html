@@ -4,12 +4,18 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>NYT Connections Helper</title>
+    <link rel="icon" href="../../icons/icon-32.png">
     <link rel="stylesheet" href="./popup.css">
   </head>
   <body>
     <main class="popup">
-      <h1>NYT Connections Helper</h1>
-      <p class="subtitle">Active categories</p>
+      <header class="popup-header">
+        <img class="logo-mark" src="../../assets/logo.svg" alt="" aria-hidden="true" width="44" height="44">
+        <div>
+          <h1>NYT Connections Helper</h1>
+          <p class="subtitle">Active categories</p>
+        </div>
+      </header>
       <div id="category-list" class="category-list"></div>
       <p id="status" class="status" aria-live="polite"></p>
       <div class="actions">
