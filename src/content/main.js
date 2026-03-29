@@ -14,6 +14,9 @@
   let currentSettings = shared.getDefaultSettings();
   let reapplyQueued = false;
   let toolbarDeselecting = false;
+  let gameHooksAttached = false;
+  let gameObserver = null;
+  let bootstrapObserver = null;
 
   init().catch(error => {
     console.error('NYT Connections Helper failed to initialize.', error);
@@ -23,28 +26,90 @@
     currentSettings = await shared.loadSettings();
     pruneCustomStates();
     updateStyles();
-    queueReapply();
-
-    window.addEventListener('pointerdown', onPointerDown, true);
-    window.addEventListener('click', onCardClick, true);
-
-    const observer = new MutationObserver(() => {
-      reapplyAllStates();
-      queueReapply();
-    });
-    observer.observe(document.documentElement, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['class', 'aria-pressed', 'aria-selected', 'aria-checked', 'data-state', 'aria-disabled', 'data-testid']
-    });
+    activateWhenReady();
 
     shared.subscribeToSettingsChanges(nextSettings => {
       currentSettings = nextSettings;
       pruneCustomStates();
       updateStyles();
+      activateWhenReady();
       queueReapply();
     });
+  }
+
+  function activateWhenReady() {
+    if (hasGameCards()) {
+      attachGameHooks();
+      stopBootstrapObserver();
+      queueReapply();
+      return;
+    }
+
+    removeToolbar();
+    startBootstrapObserver();
+  }
+
+  function attachGameHooks() {
+    if (!gameHooksAttached) {
+      window.addEventListener('pointerdown', onPointerDown, true);
+      window.addEventListener('click', onCardClick, true);
+      gameHooksAttached = true;
+    }
+
+    if (gameObserver) {
+      return;
+    }
+
+    gameObserver = new MutationObserver(() => {
+      if (!hasGameCards()) {
+        stopGameObserver();
+        removeToolbar();
+        startBootstrapObserver();
+        return;
+      }
+
+      queueReapply();
+    });
+    gameObserver.observe(document.documentElement, {
+      childList: true,
+      subtree: true
+    });
+  }
+
+  function startBootstrapObserver() {
+    if (bootstrapObserver || hasGameCards()) {
+      return;
+    }
+
+    bootstrapObserver = new MutationObserver(() => {
+      if (hasGameCards()) {
+        attachGameHooks();
+        stopBootstrapObserver();
+        queueReapply();
+      }
+    });
+    bootstrapObserver.observe(document.documentElement, {
+      childList: true,
+      subtree: true
+    });
+  }
+
+  function stopBootstrapObserver() {
+    if (!bootstrapObserver) {
+      return;
+    }
+
+    bootstrapObserver.disconnect();
+    bootstrapObserver = null;
+  }
+
+  function stopGameObserver() {
+    if (!gameObserver) {
+      return;
+    }
+
+    gameObserver.disconnect();
+    gameObserver = null;
   }
 
   function getActiveCategories() {
@@ -268,6 +333,10 @@
     reapplyQueued = true;
     requestAnimationFrame(() => {
       reapplyQueued = false;
+      if (!hasGameCards()) {
+        removeToolbar();
+        return;
+      }
       ensureToolbar();
       reapplyAllStates();
     });
@@ -337,6 +406,11 @@
       return;
     }
 
+    if (!hasGameCards()) {
+      removeToolbar();
+      return;
+    }
+
     const mountPoint = findToolbarMountPoint();
     let toolbar = document.getElementById(TOOLBAR_ID);
 
@@ -361,6 +435,32 @@
     toolbar.setAttribute(TOOLBAR_FLOAT_ATTR, 'true');
     if (toolbar.parentElement !== document.body) {
       document.body.appendChild(toolbar);
+    }
+  }
+
+  function hasGameCards() {
+    const cards = document.querySelectorAll(CARD_SELECTOR);
+    for (const card of cards) {
+      if (isCardVisible(card)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  function isCardVisible(card) {
+    if (!(card instanceof Element)) {
+      return false;
+    }
+
+    return card.getClientRects().length > 0;
+  }
+
+  function removeToolbar() {
+    const toolbar = document.getElementById(TOOLBAR_ID);
+    if (toolbar) {
+      toolbar.remove();
     }
   }
 
@@ -578,6 +678,10 @@
         position: fixed;
         right: 16px;
         bottom: 16px;
+        left: auto;
+        width: auto;
+        min-width: 0;
+        max-width: calc(100vw - 32px);
         margin-top: 0;
         padding: 10px;
         border-radius: 16px;
