@@ -2,6 +2,8 @@
   'use strict';
 
   const STORAGE_KEY = 'settings';
+  const PRIMARY_STORAGE_AREA = 'local';
+  const LEGACY_STORAGE_AREA = 'sync';
   const MIN_CATEGORIES = 1;
   const MAX_CATEGORIES = 8;
   const DEFAULT_TEXT_COLOR = '#1d1d1d';
@@ -163,18 +165,23 @@
     return { ok: true, errors: [], value: normalizeSettings(input) };
   }
 
-  function getStorageArea() {
+  function getStorageArea(areaName) {
     if (!chrome || !chrome.storage) {
       throw new Error('Chrome storage is unavailable.');
     }
 
-    return chrome.storage.sync;
+    const storageArea = chrome.storage[areaName];
+    if (!storageArea) {
+      throw new Error(`Chrome storage area "${areaName}" is unavailable.`);
+    }
+
+    return storageArea;
   }
 
-  function getFromStorage(keys) {
+  function getFromStorage(keys, areaName) {
     return new Promise((resolve, reject) => {
       try {
-        getStorageArea().get(keys, items => {
+        getStorageArea(areaName).get(keys, items => {
           if (chrome.runtime && chrome.runtime.lastError) {
             reject(new Error(chrome.runtime.lastError.message));
             return;
@@ -187,10 +194,26 @@
     });
   }
 
-  function setInStorage(items) {
+  function setInStorage(items, areaName) {
     return new Promise((resolve, reject) => {
       try {
-        getStorageArea().set(items, () => {
+        getStorageArea(areaName).set(items, () => {
+          if (chrome.runtime && chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+            return;
+          }
+          resolve();
+        });
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  function removeFromStorage(keys, areaName) {
+    return new Promise((resolve, reject) => {
+      try {
+        getStorageArea(areaName).remove(keys, () => {
           if (chrome.runtime && chrome.runtime.lastError) {
             reject(new Error(chrome.runtime.lastError.message));
             return;
@@ -204,17 +227,32 @@
   }
 
   async function loadSettings() {
-    const items = await getFromStorage([STORAGE_KEY]);
-    const candidate = items[STORAGE_KEY];
-    const validation = validateSettings(candidate);
+    const primaryItems = await getFromStorage([STORAGE_KEY], PRIMARY_STORAGE_AREA);
+    const primaryCandidate = primaryItems[STORAGE_KEY];
+    const primaryValidation = validateSettings(primaryCandidate);
 
-    if (!validation.ok) {
-      const defaults = getDefaultSettings();
-      await setInStorage({ [STORAGE_KEY]: defaults });
-      return defaults;
+    if (primaryValidation.ok) {
+      return primaryValidation.value;
     }
 
-    return validation.value;
+    // Migrate legacy synced settings to local storage so settings stay on-device.
+    try {
+      const legacyItems = await getFromStorage([STORAGE_KEY], LEGACY_STORAGE_AREA);
+      const legacyCandidate = legacyItems[STORAGE_KEY];
+      const legacyValidation = validateSettings(legacyCandidate);
+
+      if (legacyValidation.ok) {
+        await setInStorage({ [STORAGE_KEY]: legacyValidation.value }, PRIMARY_STORAGE_AREA);
+        await removeFromStorage([STORAGE_KEY], LEGACY_STORAGE_AREA);
+        return legacyValidation.value;
+      }
+    } catch (error) {
+      console.warn('Unable to migrate legacy synced settings.', error);
+    }
+
+    const defaults = getDefaultSettings();
+    await setInStorage({ [STORAGE_KEY]: defaults }, PRIMARY_STORAGE_AREA);
+    return defaults;
   }
 
   async function saveSettings(settings) {
@@ -223,7 +261,7 @@
       throw new Error(validation.errors.join(' '));
     }
 
-    await setInStorage({ [STORAGE_KEY]: validation.value });
+    await setInStorage({ [STORAGE_KEY]: validation.value }, PRIMARY_STORAGE_AREA);
     return validation.value;
   }
 
@@ -233,7 +271,7 @@
     }
 
     const listener = function listener(changes, areaName) {
-      if (areaName !== 'sync' || !changes[STORAGE_KEY]) {
+      if (areaName !== PRIMARY_STORAGE_AREA || !changes[STORAGE_KEY]) {
         return;
       }
 

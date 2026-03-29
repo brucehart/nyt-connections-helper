@@ -4,7 +4,7 @@
   <img src="assets/logo.svg" width="132" alt="NYT Connections Helper logo">
 </p>
 
-NYT Connections Helper is a Chrome extension that recreates the behavior of the existing NYT Connections color-cycler userscript and adds configurable category settings.
+NYT Connections Helper is an unofficial Chrome extension that recreates the behavior of the existing NYT Connections color-cycler userscript and adds configurable category settings.
 
 ## Features
 
@@ -33,3 +33,18 @@ Each default category uses text color `#1d1d1d`.
 
 - `https://www.nytimes.com/games/connections*`
 - `https://www.nytimes.com/crosswords/game/connections*`
+
+## Privacy Policy
+
+The extension's privacy policy is available in [PRIVACY.md](PRIVACY.md).
+
+Verified against the current codebase:
+
+- The extension only runs on the two New York Times Connections URL patterns declared in `manifest.json`.
+- The extension stores only basic category settings in `chrome.storage.local`.
+- The extension does not transmit extension data to developer-controlled or third-party servers.
+- The extension does not load remote code, remote scripts, analytics, or tracking code.
+
+## Disclaimer
+
+NYT Connections Helper is not affiliated with, endorsed by, or sponsored by The New York Times Company.
