@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>NYT Connections Helper Settings</title>
+    <link rel="stylesheet" href="./options.css">
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <p class="eyebrow">Chrome extension settings</p>
+        <h1>NYT Connections Helper</h1>
+        <p class="description">
+          Configure how many categories are active and customize the label, tile color, and text color for each one.
+        </p>
+      </header>
+
+      <section class="panel">
+        <label class="count-field" for="category-count">
+          <span>Active categories</span>
+          <input id="category-count" type="number" min="1" max="8" step="1">
+        </label>
+
+        <div id="category-fields" class="category-fields"></div>
+
+        <p id="status" class="status" aria-live="polite"></p>
+
+        <div class="actions">
+          <button id="save-settings" type="button">Save settings</button>
+          <button id="restore-defaults" type="button" class="secondary">Restore defaults</button>
+        </div>
+      </section>
+    </main>
+
+    <script src="../shared/defaults.js"></script>
+    <script src="./options.js"></script>
+  </body>
+</html>

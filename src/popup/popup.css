@@ -1,0 +1,85 @@
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  background: #f8f7f2;
+  color: #1d1d1d;
+}
+
+.popup {
+  width: 320px;
+  padding: 16px;
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.subtitle {
+  margin: 0 0 12px;
+  color: #525252;
+  font-size: 13px;
+}
+
+.category-list {
+  display: grid;
+  gap: 8px;
+}
+
+.category-card {
+  display: grid;
+  grid-template-columns: 18px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.category-name {
+  font-weight: 600;
+}
+
+.category-meta {
+  font-size: 12px;
+  color: #626262;
+}
+
+.status {
+  min-height: 18px;
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: #265f2c;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+button {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 12px;
+  font: inherit;
+  font-weight: 600;
+  background: #111111;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+button:last-child {
+  background: #ffffff;
+  color: #111111;
+  border: 1px solid rgba(0, 0, 0, 0.18);
+}
