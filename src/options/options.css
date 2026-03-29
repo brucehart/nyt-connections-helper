@@ -18,6 +18,20 @@ body {
   margin-bottom: 24px;
 }
 
+.hero-brand {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+}
+
+.hero-logo {
+  display: block;
+  width: clamp(64px, 9vw, 80px);
+  height: clamp(64px, 9vw, 80px);
+  border-radius: 22px;
+  flex: none;
+}
+
 .eyebrow {
   margin: 0 0 10px;
   text-transform: uppercase;
@@ -167,6 +181,11 @@ button.secondary {
 @media (max-width: 560px) {
   .page {
     padding: 28px 14px 48px;
+  }
+
+  .hero-brand {
+    gap: 14px;
+    align-items: flex-start;
   }
 
   .panel {
