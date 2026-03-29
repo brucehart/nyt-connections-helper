@@ -337,6 +337,11 @@
       return;
     }
 
+    if (!hasGameCards()) {
+      removeToolbar();
+      return;
+    }
+
     const mountPoint = findToolbarMountPoint();
     let toolbar = document.getElementById(TOOLBAR_ID);
 
@@ -361,6 +366,17 @@
     toolbar.setAttribute(TOOLBAR_FLOAT_ATTR, 'true');
     if (toolbar.parentElement !== document.body) {
       document.body.appendChild(toolbar);
+    }
+  }
+
+  function hasGameCards() {
+    return Boolean(document.querySelector(CARD_SELECTOR));
+  }
+
+  function removeToolbar() {
+    const toolbar = document.getElementById(TOOLBAR_ID);
+    if (toolbar) {
+      toolbar.remove();
     }
   }
 
@@ -578,6 +594,10 @@
         position: fixed;
         right: 16px;
         bottom: 16px;
+        left: auto;
+        width: auto;
+        min-width: 0;
+        max-width: calc(100vw - 32px);
         margin-top: 0;
         padding: 10px;
         border-radius: 16px;
