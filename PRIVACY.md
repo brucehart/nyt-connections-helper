@@ -1,14 +1,15 @@
 # Privacy Policy
 
-Last updated: 2026-03-29
+Last updated: 2026-10-08
 
-NYT Connections Helper is an unofficial browser extension for customizing tile colors on the New York Times Connections game pages.
+NYT Connections Helper is an unofficial browser extension for customizing tile colors on the New York Times Connections and Connections: Sports Edition game pages.
 
 ## What This Extension Does
 
 - Runs only on these pages:
   - `https://www.nytimes.com/games/connections*`
   - `https://www.nytimes.com/crosswords/game/connections*`
+  - `https://www.nytimes.com/athletic/connections-sports-edition*`
 - Lets you cycle tile colors and edit category names and colors.
 - Stores only the extension's category settings in Chrome extension local storage on your device.
 

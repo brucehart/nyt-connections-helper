@@ -8,12 +8,25 @@
   const TOOLBAR_ID = 'nch-connections-toolbar';
   const TOOLBAR_FLOAT_ATTR = 'data-nch-floating';
   const STYLE_ID = 'nch-connections-styles';
+  // Classic Connections and the Athletic's Sports Edition mark selected tiles
+  // with different CSS module classes. Sports Edition swaps the selected class
+  // for its shake/shuffle variants while those animations run.
+  const SELECTED_CLASS_FRAGMENTS = [
+    'Card-module_selected',
+    'Card_cardAnimationSelected',
+    'Card_cardAnimationShake',
+    'Card_shuffleSelected'
+  ];
+  const SELECTED_CLASS_SELECTOR = SELECTED_CLASS_FRAGMENTS
+    .map(fragment => `[class*="${fragment}"]`).join(', ');
+  const CLASS_TRACKED_CARD_SELECTOR = '[class*="Card-module_"], [class*="Card_cardAnimation"]';
   const customStateByCardKey = new Map();
   const pointerDownPhaseByKey = new Map();
 
   let currentSettings = shared.getDefaultSettings();
   let reapplyQueued = false;
   let toolbarDeselecting = false;
+  let labelClickKey = '';
   let gameHooksAttached = false;
   let gameObserver = null;
   let bootstrapObserver = null;
@@ -171,6 +184,20 @@
       return;
     }
 
+    // A label click that isn't cancelled is re-dispatched to the card's
+    // checkbox. Sports Edition has already selected the card on pointerdown by
+    // then, so the echo would look like a second click on a selected card.
+    if (event.target instanceof HTMLInputElement) {
+      if (labelClickKey === key) {
+        return;
+      }
+    } else {
+      labelClickKey = key;
+      setTimeout(() => {
+        labelClickKey = '';
+      }, 0);
+    }
+
     const savedPhase = pointerDownPhaseByKey.get(key);
     pointerDownPhaseByKey.delete(key);
 
@@ -247,7 +274,9 @@
       }
     }
 
-    return '';
+    // Sports Edition image tiles (player headshots) have no visible text.
+    const input = card.querySelector('input');
+    return input ? normalizeText(input.value || '') : '';
   }
 
   function stripStateWords(text) {
@@ -333,10 +362,12 @@
     reapplyQueued = true;
     requestAnimationFrame(() => {
       reapplyQueued = false;
+      protectInterstitialControls();
       if (!hasGameCards()) {
         removeToolbar();
         return;
       }
+      compactGameLayout();
       ensureToolbar();
       reapplyAllStates();
     });
@@ -385,13 +416,18 @@
       return true;
     }
 
-    const className = typeof card.className === 'string' ? card.className : '';
-    if (className.indexOf('Card-module_selected') !== -1) {
+    if (card.matches(SELECTED_CLASS_SELECTOR)) {
       return true;
     }
 
+    // Both games leave the hidden checkbox checked after Deselect, so when the
+    // card carries the game's CSS module classes, trust those alone.
+    if (card.matches(CLASS_TRACKED_CARD_SELECTOR)) {
+      return false;
+    }
+
     const selectedDescendant = card.querySelector(
-      'input:checked, [aria-checked="true"], [aria-pressed="true"], [aria-selected="true"], [data-state="selected"], [class*="Card-module_selected"]'
+      `input:checked, [aria-checked="true"], [aria-pressed="true"], [aria-selected="true"], [data-state="selected"], ${SELECTED_CLASS_SELECTOR}`
     );
     if (selectedDescendant) {
       return true;
@@ -426,8 +462,11 @@
 
     if (mountPoint) {
       toolbar.removeAttribute(TOOLBAR_FLOAT_ATTR);
-      if (toolbar.parentElement !== mountPoint.parentElement || toolbar.nextElementSibling !== mountPoint) {
-        mountPoint.insertAdjacentElement('beforebegin', toolbar);
+      matchNativeButtonFont(toolbar, mountPoint);
+      // Share the native controls' normal flow. The animated tile board can
+      // contain absolutely positioned layers that are unsafe toolbar anchors.
+      if (toolbar.parentElement !== mountPoint || mountPoint.firstElementChild !== toolbar) {
+        mountPoint.prepend(toolbar);
       }
       return;
     }
@@ -435,6 +474,15 @@
     toolbar.setAttribute(TOOLBAR_FLOAT_ATTR, 'true');
     if (toolbar.parentElement !== document.body) {
       document.body.appendChild(toolbar);
+    }
+  }
+
+  function matchNativeButtonFont(toolbar, mountPoint) {
+    // Sports Edition's page font is a serif, unlike its control buttons.
+    const nativeButton = mountPoint.querySelector(`button:not(#${TOOLBAR_ID} button)`);
+    const fontFamily = nativeButton ? getComputedStyle(nativeButton).fontFamily : '';
+    if (fontFamily && toolbar.style.fontFamily !== fontFamily) {
+      toolbar.style.fontFamily = fontFamily;
     }
   }
 
@@ -458,6 +506,7 @@
   }
 
   function removeToolbar() {
+    document.documentElement.removeAttribute('data-nch-game-ready');
     const toolbar = document.getElementById(TOOLBAR_ID);
     if (toolbar) {
       toolbar.remove();
@@ -468,23 +517,106 @@
     return JSON.stringify(getActiveCategories());
   }
 
+  function protectInterstitialControls() {
+    // Ad banners often contain advertiser links or a close button. Preserve
+    // the entry/skip controls specifically, rather than every clickable ad.
+    for (const control of document.querySelectorAll('button, a, input, [role="button"]')) {
+      const label = [control.getAttribute('aria-label'), control.textContent, control.value]
+        .filter(Boolean).join(' ');
+      control.toggleAttribute('data-nch-ad-continue', /\b(?:continue|skip|play)\b/i.test(label));
+    }
+  }
+
+  function markAdvertisementSpace() {
+    // The visible "advertisement" label survives even when NYT changes the
+    // slot's identifiers. Collapse its ad-only ancestors, not just the label.
+    const protectedContent = `${CARD_SELECTOR}, button, input, [role="button"], [data-nch-ad-continue], dialog, [role="dialog"], [aria-modal="true"], nav, header, h1, h2`;
+    for (const previous of document.querySelectorAll('[data-nch-ad-space]')) {
+      previous.removeAttribute('data-nch-ad-space');
+    }
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const labels = [];
+    while (walker.nextNode()) {
+      if (normalizeText(walker.currentNode.textContent) === 'ADVERTISEMENT') {
+        labels.push(walker.currentNode.parentElement);
+      }
+    }
+    for (const label of labels) {
+      if (label.closest('script, style, dialog, [role="dialog"], [aria-modal="true"]')) {
+        continue;
+      }
+      let container = label;
+      while (container && container !== document.body && container !== document.documentElement) {
+        if (normalizeText(container.textContent) !== 'ADVERTISEMENT' ||
+            container.matches(protectedContent) || container.querySelector(protectedContent)) {
+          break;
+        }
+        container.setAttribute('data-nch-ad-space', '');
+        container = container.parentElement;
+      }
+    }
+  }
+
   function findToolbarMountPoint() {
     const controlsButton = document.querySelector(
       'button[data-testid="shuffle-btn"], button[data-testid="submit-btn"], button[aria-label="Shuffle"], button[aria-label="Submit"]'
-    );
+    ) || findControlButton('SHUFFLE') || findControlButton('SUBMIT');
     if (!controlsButton) {
       return null;
     }
 
     let node = controlsButton.parentElement;
     while (node && node !== document.body) {
-      if (node.querySelectorAll('button').length >= 2) {
+      // Never insert the toolbar above the board or into a page-wide wrapper.
+      if (node.querySelector(CARD_SELECTOR)) {
+        return null;
+      }
+      if (node.querySelectorAll(`button:not(#${TOOLBAR_ID} button)`).length >= 2) {
         return node;
       }
       node = node.parentElement;
     }
 
-    return controlsButton.parentElement;
+    return null;
+  }
+
+  function compactGameLayout() {
+    const card = Array.from(document.querySelectorAll(CARD_SELECTOR)).find(isCardVisible);
+    const controls = findToolbarMountPoint();
+    if (!card || !controls) {
+      return;
+    }
+
+    // Find the shared game wrapper without depending on hashed site classes.
+    let game = card.parentElement;
+    while (game && game !== document.body && !game.contains(controls)) {
+      game = game.parentElement;
+    }
+    if (!game || game === document.body || game === document.documentElement) {
+      return;
+    }
+
+    controls.setAttribute('data-nch-compact-controls', '');
+    markAdvertisementSpace();
+    document.documentElement.setAttribute('data-nch-game-ready', '');
+    game.setAttribute('data-nch-compact-game', '');
+    // Leave all board-internal dimensions intact, including animation layers.
+    let wrapper = controls.parentElement;
+    while (wrapper && wrapper !== game && game.contains(wrapper)) {
+      wrapper.setAttribute('data-nch-compact-shell', '');
+      wrapper = wrapper.parentElement;
+    }
+    let shell = game;
+    while (shell && shell !== document.body && shell !== document.documentElement) {
+      shell.setAttribute('data-nch-compact-shell', '');
+      const layout = getComputedStyle(shell);
+      shell.toggleAttribute('data-nch-column-shell',
+        layout.display.includes('flex') && layout.flexDirection === 'column');
+      if (shell.matches('main, [role="main"]')) {
+        break;
+      }
+      shell = shell.parentElement;
+    }
   }
 
   function createToolbar() {
@@ -598,7 +730,8 @@
   }
 
   function clickDeselectAllButton() {
-    const button = findControlButton('DESELECT ALL');
+    // Sports Edition labels this control "Deselect".
+    const button = findControlButton('DESELECT ALL') || findControlButton('DESELECT');
     if (!button || button.disabled) {
       return false;
     }
@@ -644,19 +777,20 @@
     }
 
     const activeCategories = getActiveCategories();
+    const notSelected = `:not(${SELECTED_CLASS_SELECTOR})`;
     let colorRules = '';
 
     for (let index = 0; index < activeCategories.length; index += 1) {
       const category = activeCategories[index];
       colorRules += `
-      .${CYCLE_CLASS}[${CYCLE_ATTR}="${index + 1}"]:not([class*="Card-module_selected"]) {
+      .${CYCLE_CLASS}[${CYCLE_ATTR}="${index + 1}"]${notSelected} {
         background-color: ${category.backgroundColor} !important;
         color: ${category.textColor} !important;
       }`;
     }
 
     style.textContent = `
-      .${CYCLE_CLASS}:not([class*="Card-module_selected"]) {
+      .${CYCLE_CLASS}${notSelected} {
         border-color: rgba(0, 0, 0, 0.35) !important;
         box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.22) !important;
       }
@@ -665,17 +799,18 @@
         display: flex;
         flex: 0 0 100%;
         flex-wrap: wrap;
-        gap: 8px;
+        gap: 6px;
         align-items: center;
         justify-content: center;
         width: 100%;
         min-width: 100%;
+        grid-column: 1 / -1;
         box-sizing: border-box;
-        margin: 12px 0;
-        z-index: 9999;
+        margin: 6px 0;
       }
       #${TOOLBAR_ID}[${TOOLBAR_FLOAT_ATTR}="true"] {
         position: fixed;
+        z-index: 10;
         right: 16px;
         bottom: 16px;
         left: auto;
@@ -692,7 +827,10 @@
         appearance: none;
         border: 1px solid rgba(0, 0, 0, 0.2);
         border-radius: 999px;
-        padding: 8px 14px;
+        min-height: 36px;
+        max-width: 100%;
+        overflow-wrap: anywhere;
+        padding: 6px 10px;
         font: inherit;
         font-weight: 700;
         color: var(--nch-button-text);

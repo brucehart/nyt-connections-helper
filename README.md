@@ -4,10 +4,11 @@
   <img src="assets/logo.svg" width="132" alt="NYT Connections Helper logo">
 </p>
 
-NYT Connections Helper is an unofficial Chrome extension that recreates the behavior of the existing NYT Connections color-cycler userscript and adds configurable category settings.
+NYT Connections Helper is an unofficial Chrome extension that recreates the behavior of the existing NYT Connections color-cycler userscript and adds configurable category settings. It works on both the classic NYT Connections game and The Athletic's Connections: Sports Edition.
 
 ## Features
 
+- Hides ad banners and compacts the game layout, with less space above the puzzle and between helper buttons and game controls.
 - Cycles cards through NYT's native selected state and custom category colors.
 - Adds bulk toolbar buttons for applying a category color to the currently selected cards.
 - Lets you change the number of active categories, each category label, each category background color, and each category text color.
@@ -29,10 +30,14 @@ Each default category uses text color `#1d1d1d`.
 3. Click Load unpacked.
 4. Select this repository root.
 
+After updating an existing unpacked installation, click its Reload button on
+`chrome://extensions`, then refresh the Connections page.
+
 ## Supported URLs
 
 - `https://www.nytimes.com/games/connections*`
 - `https://www.nytimes.com/crosswords/game/connections*`
+- `https://www.nytimes.com/athletic/connections-sports-edition*`
 
 ## Privacy Policy
 
@@ -40,7 +45,7 @@ The extension's privacy policy is available in [PRIVACY.md](PRIVACY.md).
 
 Verified against the current codebase:
 
-- The extension only runs on the two New York Times Connections URL patterns declared in `manifest.json`.
+- The extension only runs on the three New York Times Connections URL patterns declared in `manifest.json`.
 - The extension stores only basic category settings in `chrome.storage.local`.
 - The extension does not transmit extension data to developer-controlled or third-party servers.
 - The extension does not load remote code, remote scripts, analytics, or tracking code.
