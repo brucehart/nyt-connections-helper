@@ -1,0 +1,68 @@
+/* Wait for the playable board. Pre-game ads can contain the Continue button.
+   Never hide Continue/Skip/Play controls or anything inside a dialog, even when
+   NYT mounts the board behind the interstitial. */
+html[data-nch-game-ready] :is(
+  [data-nch-ad-space],
+  #ad-placeholder,
+  #ad-top,
+  #ad-bottom,
+  #top-ad,
+  #bottom-ad,
+  #top-ad-container,
+  #bottom-ad-container,
+  .ad-container,
+  .ad-wrapper,
+  .ad-slot,
+  .pz-ad,
+  .pz-ad-box,
+  [data-testid="ad-container"],
+  [data-testid="ad-slot"],
+  [data-testid="ad-banner"],
+  [data-ad-slot],
+  [id^="div-gpt-ad"],
+  [aria-label="Advertisement" i]
+):not([data-nch-ad-continue], dialog, [role="dialog"], [aria-modal="true"]):not(:is(dialog, [role="dialog"], [aria-modal="true"]) *):not(:has([data-nch-ad-continue], dialog, [role="dialog"], [aria-modal="true"], label[data-testid="card-label"])) {
+  display: none !important;
+}
+
+/* Keep navigation available while reducing the space above the puzzle. */
+html[data-nch-game-ready] .pz-game-title-bar {
+  padding-block: 8px !important;
+  margin-block: 0 !important;
+}
+
+/* These attributes are attached to the live game, independent of NYT's
+   generated CSS class names. Leave the board and its tile sizes intact. */
+html[data-nch-game-ready] [data-nch-compact-shell] {
+  padding-block: 0 !important;
+  margin-block: 0 !important;
+  row-gap: 8px !important;
+  align-content: start !important;
+}
+
+/* Move vertically centered content up without collapsing the board's height. */
+html[data-nch-game-ready] [data-nch-column-shell] {
+  justify-content: flex-start !important;
+}
+
+html[data-nch-game-ready] [data-nch-compact-game] {
+  padding-block: 8px !important;
+}
+
+html[data-nch-game-ready] [data-nch-compact-controls] {
+  margin-block: 0 !important;
+  padding-block: 0 !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+}
+
+html[data-nch-game-ready] [data-nch-compact-game] :is(
+  [data-testid="mistakes-remaining"],
+  [class*="Mistakes-module_mistakes"]
+) {
+  margin-block: 8px !important;
+}
