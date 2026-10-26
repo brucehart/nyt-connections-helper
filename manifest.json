@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "NYT Connections Helper",
-  "description": "Unofficial NYT Connections helper, not affiliated with The New York Times, with local-only category settings.",
-  "version": "0.1",
+  "description": "Unofficial NYT Connections and Sports Edition helper, not affiliated with The New York Times, with local-only category settings.",
+  "version": "0.3",
   "homepage_url": "https://github.com/brucehart/nyt-connections-helper/blob/main/PRIVACY.md",
   "icons": {
     "16": "icons/icon-16.png",
@@ -15,12 +15,14 @@
     {
       "matches": [
         "https://www.nytimes.com/games/connections*",
-        "https://www.nytimes.com/crosswords/game/connections*"
+        "https://www.nytimes.com/crosswords/game/connections*",
+        "https://www.nytimes.com/athletic/connections-sports-edition*"
       ],
       "js": [
         "src/shared/defaults.js",
         "src/content/main.js"
       ],
+      "css": ["src/content/layout.css"],
       "run_at": "document_start"
     }
   ],
